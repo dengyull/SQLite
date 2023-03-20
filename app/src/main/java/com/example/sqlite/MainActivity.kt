@@ -8,6 +8,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
@@ -32,8 +36,12 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import com.example.sqlite.databinding.ActivityMainBinding
 import com.google.android.gms.location.*
 import com.google.android.material.snackbar.Snackbar
+import java.text.SimpleDateFormat
 import java.time.Duration
 import java.time.LocalDateTime
+import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.math.absoluteValue
 
 class MainActivity : AppCompatActivity(), SecondFragment.NotificationListener {
 
@@ -51,8 +59,13 @@ class MainActivity : AppCompatActivity(), SecondFragment.NotificationListener {
     private lateinit var myActivity: MyActivity
     private lateinit var img:ImageView
     lateinit var dd: LocalDateTime
+    private lateinit var sensorManager: SensorManager
+
+    private lateinit var accelerometer: Sensor
+    private lateinit var gyroscope: Sensor
 
     private lateinit var us: Uri
+    private var lest = 0;
 
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -92,6 +105,16 @@ class MainActivity : AppCompatActivity(), SecondFragment.NotificationListener {
         }
 
 
+
+
+
+        val builder = AlertDialog.Builder(this@MainActivity)
+        builder.setTitle("WALKING")
+        builder.setMessage("WALKING!! Keep up the good work!")
+        builder.setPositiveButton("ok") { dialog, which ->
+            // Handle positive button click
+        }
+        val dialog = builder.create()
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         locationListener = object : LocationListener {
             @RequiresApi(Build.VERSION_CODES.O)
@@ -102,50 +125,47 @@ class MainActivity : AppCompatActivity(), SecondFragment.NotificationListener {
                 val speedKMH = speed * 3.6
                 // Do something with the speed value
                 Log.d("Speed", "Speed: $speedKMH km/h")
-                var cur = checkActivity(speed)
-                //txtActivity.text = cur.toString() + speed.toString() + "m/s"
                 val now = LocalDateTime.now()
                 val durations: Duration = Duration.between(dd, now)
+                var cur = checkActivity(speed,durations.seconds)
+                txtActivity.text = cur.toString() +" "+ speed.toString() + "m/s"
                 if (myActivity==cur){
+                    lest = 0
 
                 } else {
-                    dd = now
-                    logActivity(now.toString(),durations.seconds,myActivity.toString())
-                    when (cur) {
-                        MyActivity.WALKING -> {
-                            img.setImageResource(R.drawable.walk_icon)
-                            txtActivity.text = "WALKING " + speed.toString() + "m/s"
-                            val builder = AlertDialog.Builder(this@MainActivity)
-                            builder.setTitle("WALKING")
-                            builder.setMessage("WALKING!! Keep up the good work!")
-                            builder.setPositiveButton("Yes") { dialog, which ->
-                                // Handle positive button click
-                            }
-                            builder.setNegativeButton("No") { dialog, which ->
-                                // Handle negative button click
-                            }
-                            val dialog = builder.create()
-                            dialog.show()
+                    lest++
+                    if (lest>=5){
 
-                        }
-                        MyActivity.RUNNING -> {
-                            txtActivity.text = "RUNNING " + speed.toString() + "m/s"
-                            img.setImageResource(R.drawable.run_icon)
-                        }
-                        MyActivity.IN_VEHICLE -> {
-                            txtActivity.text = "IN_VEHICLE " + speed.toString() + "m/s"
-                            img.setImageResource(R.drawable.car_icon)
-                        }
-                        MyActivity.STILL -> {
-                            img.setImageResource(R.drawable.still_icon)
-                            txtActivity.text = "STILL " + speed.toString() + "m/s"
+                        dialog.dismiss()
+                        dd = now
+                        logActivity(now.toString(),durations.seconds,myActivity.toString())
+                        when (cur) {
+                            MyActivity.WALKING -> {
+                                img.setImageResource(R.drawable.walk_icon)
+                                txtActivity.text = "WALKING "// + speed.toString() + "m/s"
 
+                                dialog.show()
+
+                            }
+                            MyActivity.RUNNING -> {
+                                txtActivity.text = "RUNNING "// + speed.toString() + "m/s"
+                                img.setImageResource(R.drawable.run_icon)
+                            }
+                            MyActivity.IN_VEHICLE -> {
+                                txtActivity.text = "IN_VEHICLE "// + speed.toString() + "m/s"
+                                img.setImageResource(R.drawable.car_icon)
+                            }
+                            MyActivity.STILL -> {
+                                img.setImageResource(R.drawable.still_icon)
+                                txtActivity.text = "STILL "// + speed.toString() + "m/s"
+
+                            }
                         }
+                        myActivity = cur
+                        val message = "You have just  ${cur.toString()} for $durations seconds"
+                        Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
+
                     }
-                    myActivity = cur
-                    val message = "You have just  ${cur.toString()} for $durations seconds"
-                    Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
-
 
                 }
 
@@ -195,16 +215,24 @@ class MainActivity : AppCompatActivity(), SecondFragment.NotificationListener {
                 handler.postDelayed(this, 1000) // Update every 1 second
             }
         }
+
+
     }
 
 
-    fun checkActivity(value: Float): MyActivity {
-        return when {
-            value < 0.6 -> MyActivity.STILL
-            value >= 0.6 && value <= 2.5 -> MyActivity.WALKING
-            value > 2.5 && value <= 10 -> MyActivity.RUNNING
-            value > 10 -> MyActivity.IN_VEHICLE
-            else -> throw IllegalArgumentException("Invalid value: $value")
+    fun checkActivity(value: Float, durations: Long): MyActivity {
+        if (durations>5) {
+
+            return when {
+                value < 0.6 -> MyActivity.STILL
+                value >= 0.6 && value <= 2.5 -> MyActivity.WALKING
+                value > 2.5 && value <= 10 -> MyActivity.RUNNING
+                value > 10 -> MyActivity.IN_VEHICLE
+                else -> throw IllegalArgumentException("Invalid value: $value")
+            }
+
+        } else {
+            return myActivity
         }
     }
     override fun onNotificationReceived(notification: Intent?) {
@@ -274,16 +302,23 @@ class MainActivity : AppCompatActivity(), SecondFragment.NotificationListener {
         }
     }
     fun logActivity(now:String, activityDuration:Long,activity:String){
-        val databaseHelper = ActivityLogDatabaseHelper(applicationContext)
+        if (activityDuration>=30) {
+            val databaseHelper = com.example.sqlite.ActivityLogDatabaseHelper(applicationContext)
 
-        // Log activity data to the database
-        val db = databaseHelper.writableDatabase
-        val values = ContentValues().apply {
-            put("start_time", now.toString())
-            put("duration", activityDuration)
-            put("activity", activity)
+            // Log activity data to the database
+            val db = databaseHelper.writableDatabase
+            val values = android.content.ContentValues().apply {
+                put("start_time", now.toString())
+                put("duration", activityDuration)
+                put("activity", activity)
+            }
+            db.insert("activity_log", null, values)
+            db.close()
         }
-        db.insert("activity_log", null, values)
-        db.close()
     }
+
+
+
+
 }
+

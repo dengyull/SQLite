@@ -50,6 +50,9 @@ class FirstFragment : Fragment() {
 
         handler.postDelayed(runnable, 0);
 
+
+
+
     }
 
     override fun onDestroyView() {
