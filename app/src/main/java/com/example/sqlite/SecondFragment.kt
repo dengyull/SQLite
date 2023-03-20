@@ -4,11 +4,11 @@ import android.app.Activity
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
 import android.provider.OpenableColumns
 import android.util.Log
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -16,8 +16,10 @@ import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.core.view.get
+import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.example.sqlite.databinding.FragmentSecondBinding
+import java.time.Duration
 import java.time.LocalDateTime
 
 /**
@@ -26,6 +28,7 @@ import java.time.LocalDateTime
 class SecondFragment : Fragment(), AdapterView.OnItemClickListener {
 
     private var _binding: FragmentSecondBinding? = null
+    lateinit var dd:LocalDateTime
 
     // This property is only valid between onCreateView and
     // onDestroyView.
@@ -55,10 +58,12 @@ class SecondFragment : Fragment(), AdapterView.OnItemClickListener {
         }
         binding.buttonShow.setOnClickListener {
 
-            val now = LocalDateTime.now().toString()
-            val activityDuration = 30 // Example duration
+            val now = LocalDateTime.now()
+            //val durations: Duration = Duration.between(dd, now)
+
+
             val activity = "Walking" // Example activity
-            insert(now,activityDuration,activity)
+            //logActivity(now.toString(),durations.seconds,activity)
             qu()
 
         }
@@ -94,7 +99,7 @@ class SecondFragment : Fragment(), AdapterView.OnItemClickListener {
     }
 
 
-    fun insert(now:String, activityDuration:Int,activity:String){
+    fun logActivity(now:String, activityDuration:Long,activity:String){
         val databaseHelper = ActivityLogDatabaseHelper(this.requireContext())
 
         // Log activity data to the database
@@ -105,6 +110,7 @@ class SecondFragment : Fragment(), AdapterView.OnItemClickListener {
             put("activity", activity)
         }
         db.insert("activity_log", null, values)
+        db.close()
     }
 
     fun qu(){
@@ -134,7 +140,7 @@ class SecondFragment : Fragment(), AdapterView.OnItemClickListener {
                 val latestStartTime = getString(getColumnIndexOrThrow(ActivityLogDatabaseHelper.COLUMN_START_TIME))
                 val latestDuration = getInt(getColumnIndexOrThrow(ActivityLogDatabaseHelper.COLUMN_DURATION))
                 val latestActivity = getString(getColumnIndexOrThrow(ActivityLogDatabaseHelper.COLUMN_ACTIVITY))
-                texts = texts + "\nLatest Activity: $latestActivity ($latestDuration mins) on $latestStartTime"
+                texts = texts + "\nLatest Activity: $latestActivity ($latestDuration s) on $latestStartTime"
 
             }
         }
@@ -143,6 +149,7 @@ class SecondFragment : Fragment(), AdapterView.OnItemClickListener {
 
         binding.textviewSecond.text = texts
         latestActivityCursor.close()
+        db.close()
     }
 
 
@@ -150,6 +157,7 @@ class SecondFragment : Fragment(), AdapterView.OnItemClickListener {
     interface NotificationListener {
 
         fun onNotificationReceived(notification: Intent?)
+        fun play()
     }
     private var listener: NotificationListener? = null
     override fun onAttach(context: Context) {
@@ -177,8 +185,6 @@ class SecondFragment : Fragment(), AdapterView.OnItemClickListener {
                 musiclists.add(Music(fileName,data))
                 fileAdapter.notifyDataSetChanged()
             }
-
-
         }
     }
 
@@ -186,7 +192,9 @@ class SecondFragment : Fragment(), AdapterView.OnItemClickListener {
 
         val fileName = musiclists[position]
         Toast.makeText(context, "Selected file: $fileName", Toast.LENGTH_SHORT).show()
-
+        var sharedPref : SharedPreferences = requireActivity().getPreferences(Context.MODE_PRIVATE);
+        sharedPref.edit().putString("song", fileName.filePath?.data.toString()).apply()
+        Log.d("music url", fileName.filePath?.data.toString())
         listener?.onNotificationReceived(fileName.filePath)
     }
 }
