@@ -55,7 +55,6 @@ class MainActivity : AppCompatActivity(), SecondFragment.NotificationListener {
     private lateinit var locationListener: LocationListener
     private lateinit var handler: Handler
     private lateinit var runnable: Runnable
-    private lateinit var txtActivity: TextView
     private lateinit var myActivity: MyActivity
     private lateinit var img:ImageView
     lateinit var dd: LocalDateTime
@@ -76,7 +75,6 @@ class MainActivity : AppCompatActivity(), SecondFragment.NotificationListener {
         myActivity = MyActivity.STILL
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        txtActivity = findViewById(R.id.textView_test)
         img = findViewById(R.id.imageView2)
 
         setSupportActionBar(binding.toolbar)
@@ -108,133 +106,14 @@ class MainActivity : AppCompatActivity(), SecondFragment.NotificationListener {
 
 
 
-        val builder = AlertDialog.Builder(this@MainActivity)
-        builder.setTitle("WALKING")
-        builder.setMessage("WALKING!! Keep up the good work!")
-        builder.setPositiveButton("ok") { dialog, which ->
-            // Handle positive button click
-        }
-        val dialog = builder.create()
-        locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        locationListener = object : LocationListener {
-            @RequiresApi(Build.VERSION_CODES.O)
-            override fun onLocationChanged(location: Location) {
-                // Get the speed in meters/second
-                val speed = location.speed
-                // Convert speed to km/h
-                val speedKMH = speed * 3.6
-                // Do something with the speed value
-                Log.d("Speed", "Speed: $speedKMH km/h")
-                val now = LocalDateTime.now()
-                val durations: Duration = Duration.between(dd, now)
-                var cur = checkActivity(speed,durations.seconds)
-                txtActivity.text = cur.toString() +" "+ speed.toString() + "m/s"
-                if (myActivity==cur){
-                    lest = 0
-
-                } else {
-                    lest++
-                    if (lest>=5){
-
-                        dialog.dismiss()
-                        dd = now
-                        logActivity(now.toString(),durations.seconds,myActivity.toString())
-                        when (cur) {
-                            MyActivity.WALKING -> {
-                                img.setImageResource(R.drawable.walk_icon)
-                                txtActivity.text = "WALKING "// + speed.toString() + "m/s"
-
-                                dialog.show()
-
-                            }
-                            MyActivity.RUNNING -> {
-                                txtActivity.text = "RUNNING "// + speed.toString() + "m/s"
-                                img.setImageResource(R.drawable.run_icon)
-                            }
-                            MyActivity.IN_VEHICLE -> {
-                                txtActivity.text = "IN_VEHICLE "// + speed.toString() + "m/s"
-                                img.setImageResource(R.drawable.car_icon)
-                            }
-                            MyActivity.STILL -> {
-                                img.setImageResource(R.drawable.still_icon)
-                                txtActivity.text = "STILL "// + speed.toString() + "m/s"
-
-                            }
-                        }
-                        myActivity = cur
-                        val message = "You have just  ${cur.toString()} for $durations seconds"
-                        Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
-
-                    }
-
-                }
-
-            }
-
-            override fun onStatusChanged(provider: String, status: Int, extras: Bundle) {}
-
-            override fun onProviderEnabled(provider: String) {}
-
-            override fun onProviderDisabled(provider: String) {}
-        }
 
 
 
-        handler = Handler(Looper.getMainLooper())
-        runnable = object : Runnable {
-            override fun run() {
-                if (ActivityCompat.checkSelfPermission(
-                        applicationContext,
-                        Manifest.permission.ACCESS_FINE_LOCATION
-                    ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                        applicationContext,
-                        Manifest.permission.ACCESS_COARSE_LOCATION
-                    ) != PackageManager.PERMISSION_GRANTED
-                ) {
-                    // TODO: Consider calling
-                    //    ActivityCompat#requestPermissions
-                    // here to request the missing permissions, and then overriding
-                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                    //                                          int[] grantResults)
-                    // to handle the case where the user grants the permission. See the documentation
-                    // for ActivityCompat#requestPermissions for more details.
-                    val permissionArray = arrayOf(
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.ACCESS_COARSE_LOCATION
-                    )
-                    val requestCode = 123 // Replace with your desired request code
-                    ActivityCompat.requestPermissions(this@MainActivity, permissionArray, requestCode)
-                    return
-                }
-                locationManager.requestLocationUpdates(
-                    LocationManager.GPS_PROVIDER,
-                    0,
-                    0f,
-                    locationListener
-                )
-                handler.postDelayed(this, 1000) // Update every 1 second
-            }
-        }
 
 
     }
 
 
-    fun checkActivity(value: Float, durations: Long): MyActivity {
-        if (durations>5) {
-
-            return when {
-                value < 0.6 -> MyActivity.STILL
-                value >= 0.6 && value <= 2.5 -> MyActivity.WALKING
-                value > 2.5 && value <= 10 -> MyActivity.RUNNING
-                value > 10 -> MyActivity.IN_VEHICLE
-                else -> throw IllegalArgumentException("Invalid value: $value")
-            }
-
-        } else {
-            return myActivity
-        }
-    }
     override fun onNotificationReceived(notification: Intent?) {
         // Handle the notification in the Activity
         us = Uri.parse(notification?.data.toString())
@@ -277,16 +156,15 @@ class MainActivity : AppCompatActivity(), SecondFragment.NotificationListener {
 
     override fun onResume() {
         super.onResume()
-        handler.post(runnable)
         mediaPlayer?.start()
     }
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onPause() {
         super.onPause()
-        handler.removeCallbacks(runnable)
-        locationManager.removeUpdates(locationListener)
+        //handler.removeCallbacks(runnable)
+        //locationManager.removeUpdates(locationListener)
         mediaPlayer?.pause()
-        logActivity(LocalDateTime.now().toString(),Duration.between(dd, LocalDateTime.now()).seconds,myActivity.toString())
+        //logActivity(LocalDateTime.now().toString(),Duration.between(dd, LocalDateTime.now()).seconds,myActivity.toString())
     }
 
     private fun activityRecognitionPermissionApproved(): Boolean {
@@ -299,21 +177,6 @@ class MainActivity : AppCompatActivity(), SecondFragment.NotificationListener {
             )
         } else {
             true
-        }
-    }
-    fun logActivity(now:String, activityDuration:Long,activity:String){
-        if (activityDuration>=30) {
-            val databaseHelper = com.example.sqlite.ActivityLogDatabaseHelper(applicationContext)
-
-            // Log activity data to the database
-            val db = databaseHelper.writableDatabase
-            val values = android.content.ContentValues().apply {
-                put("start_time", now.toString())
-                put("duration", activityDuration)
-                put("activity", activity)
-            }
-            db.insert("activity_log", null, values)
-            db.close()
         }
     }
 
