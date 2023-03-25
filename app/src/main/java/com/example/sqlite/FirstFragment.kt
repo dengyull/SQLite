@@ -68,6 +68,7 @@ class FirstFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+
         binding.buttonFirst.setOnClickListener {
             // Get current time and create activity data
             findNavController().navigate(R.id.action_FirstFragment_to_SecondFragment)
@@ -100,7 +101,7 @@ class FirstFragment : Fragment() {
                 val now = LocalDateTime.now()
                 val durations: Duration = Duration.between(dd, now)
                 var cur = checkActivity(speed,durations.seconds)
-                txtActivity.text = cur.toString() +" "+ speed.toString() + "m/s"
+                txtActivity.text = cur.toString()// +" "+ speed.toString() + "m/s"
                 if (myActivity==cur){
                     lest = 0
 
@@ -110,7 +111,8 @@ class FirstFragment : Fragment() {
 
                         dialog.dismiss()
                         dd = now
-                        logActivity(now.toString(),durations.seconds,myActivity.toString())
+
+                        logActivity(now.plusMinutes(-5).toString(),durations.seconds,myActivity.toString())
                         when (cur) {
                             MyActivity.WALKING -> {
                                 img.setImageResource(R.drawable.walk_icon)
@@ -133,8 +135,8 @@ class FirstFragment : Fragment() {
 
                             }
                         }
+                        val message = "You have just  ${myActivity.toString()} for ${durations.seconds} seconds"
                         myActivity = cur
-                        val message = "You have just  ${cur.toString()} for $durations seconds"
                         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
 
                     }
@@ -154,6 +156,9 @@ class FirstFragment : Fragment() {
         handlers = Handler(Looper.getMainLooper())
         runnables = object : Runnable {
             override fun run() {
+                if (!isAdded) {
+                    return
+                }
                 if (ActivityCompat.checkSelfPermission(
                         requireContext(),
                         Manifest.permission.ACCESS_FINE_LOCATION

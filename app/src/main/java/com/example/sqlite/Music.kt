@@ -3,5 +3,5 @@ import android.content.Intent
 
 data class Music(
     val title: String,
-    val filePath: Intent?
+    val filePath: String
 )

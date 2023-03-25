@@ -83,10 +83,7 @@ class MainActivity : AppCompatActivity(), SecondFragment.NotificationListener {
         appBarConfiguration = AppBarConfiguration(navController.graph)
         setupActionBarWithNavController(navController, appBarConfiguration)
 
-        binding.fab.setOnClickListener { view ->
-            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                .setAction("Action", null).show()
-        }
+
         var sharedPref : SharedPreferences = this.getPreferences(Context.MODE_PRIVATE);
         us = Uri.parse(sharedPref.getString("song",""))
         Log.d("music url", us.toString())
@@ -102,22 +99,16 @@ class MainActivity : AppCompatActivity(), SecondFragment.NotificationListener {
 
         }
 
-
-
-
-
-
-
-
-
-
+        val MusicDbHelper = MusicDbHelper(applicationContext)
+        MusicDbHelper.deleteAllMusic()
     }
 
 
-    override fun onNotificationReceived(notification: Intent?) {
+    override fun onNotificationReceived(notification: String) {
         // Handle the notification in the Activity
-        us = Uri.parse(notification?.data.toString())
-        playMusic( Uri.parse(notification?.data.toString()))
+        us = Uri.parse(notification)
+        Log.v("URL", us.toString())
+        playMusic( us)
     }
 
     override fun play() {
@@ -141,6 +132,7 @@ class MainActivity : AppCompatActivity(), SecondFragment.NotificationListener {
         mediaPlayer?.release()
 
         // Create a new media player instance for the selected URI
+
         mediaPlayer = MediaPlayer.create(this, uri)
 
         // Start the media player

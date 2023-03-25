@@ -1,10 +1,12 @@
 package com.example.sqlite
 
+import android.Manifest
 import android.app.Activity
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.OpenableColumns
@@ -15,7 +17,10 @@ import android.view.ViewGroup
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.view.get
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.example.sqlite.databinding.FragmentSecondBinding
@@ -53,16 +58,12 @@ class SecondFragment : Fragment(), AdapterView.OnItemClickListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        binding.buttonSecond.isVisible = false
         binding.buttonSecond.setOnClickListener {
-            findNavController().navigate(R.id.action_SecondFragment_to_FirstFragment)
+            //findNavController().navigate(R.id.action_SecondFragment_to_FirstFragment)
         }
         binding.buttonShow.setOnClickListener {
-
-            val now = LocalDateTime.now()
             //val durations: Duration = Duration.between(dd, now)
-
-
-            val activity = "Walking" // Example activity
             //logActivity(now.toString(),durations.seconds,activity)
             qu()
 
@@ -71,6 +72,18 @@ class SecondFragment : Fragment(), AdapterView.OnItemClickListener {
             val intent = Intent(Intent.ACTION_GET_CONTENT)
             intent.type = "audio/*"
             resultLauncher.launch(intent);
+
+        }
+
+        val MusicDbHelper = MusicDbHelper(this.requireContext())
+        try{
+            musiclists = MusicDbHelper.getMusic()
+            for (music in musiclists){
+                fileLists.add(music.title)
+
+            }
+
+        } catch (e: Exception){
 
         }
 
@@ -140,7 +153,9 @@ class SecondFragment : Fragment(), AdapterView.OnItemClickListener {
                 val latestStartTime = getString(getColumnIndexOrThrow(ActivityLogDatabaseHelper.COLUMN_START_TIME))
                 val latestDuration = getInt(getColumnIndexOrThrow(ActivityLogDatabaseHelper.COLUMN_DURATION))
                 val latestActivity = getString(getColumnIndexOrThrow(ActivityLogDatabaseHelper.COLUMN_ACTIVITY))
-                texts = texts + "\nLatest Activity: $latestActivity ($latestDuration s) on $latestStartTime"
+                val roundedSeconds = latestDuration / 60 * 60
+                val minutes = roundedSeconds / 60
+                texts = texts + "\nLatest Activity: $latestActivity ($minutes min ($latestDuration s)) on $latestStartTime"
 
             }
         }
@@ -156,7 +171,7 @@ class SecondFragment : Fragment(), AdapterView.OnItemClickListener {
 
     interface NotificationListener {
 
-        fun onNotificationReceived(notification: Intent?)
+        fun onNotificationReceived(notification: String)
         fun play()
     }
     private var listener: NotificationListener? = null
@@ -173,8 +188,10 @@ class SecondFragment : Fragment(), AdapterView.OnItemClickListener {
             val data: Intent? = result.data
             val us = result.data?.data
             Log.v("URL", us.toString())
-            listener?.onNotificationReceived(data)
+            listener?.onNotificationReceived(data?.data.toString())
             val contentResolver = context?.contentResolver
+            val MusicDbHelper = MusicDbHelper(this.requireContext())
+            val db =MusicDbHelper.writableDatabase
 
             val cursor = us?.let { contentResolver?.query(it, null, null, null, null) }
             if (cursor != null && cursor.moveToFirst()) {
@@ -182,7 +199,8 @@ class SecondFragment : Fragment(), AdapterView.OnItemClickListener {
                 val fileName = cursor.getString(nameIndex)
                 cursor.close()
                 fileLists.add(fileName)
-                musiclists.add(Music(fileName,data))
+                MusicDbHelper.insertMusic(fileName, data?.data.toString())
+                musiclists.add(Music(fileName,data?.data.toString()))
                 fileAdapter.notifyDataSetChanged()
             }
         }
@@ -190,11 +208,12 @@ class SecondFragment : Fragment(), AdapterView.OnItemClickListener {
 
     override fun onItemClick(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
 
+
         val fileName = musiclists[position]
         Toast.makeText(context, "Selected file: $fileName", Toast.LENGTH_SHORT).show()
         var sharedPref : SharedPreferences = requireActivity().getPreferences(Context.MODE_PRIVATE);
-        sharedPref.edit().putString("song", fileName.filePath?.data.toString()).apply()
-        Log.d("music url", fileName.filePath?.data.toString())
+        sharedPref.edit().putString("song", fileName.filePath).apply()
+        Log.d("music url", fileName.filePath)
         listener?.onNotificationReceived(fileName.filePath)
     }
 }
