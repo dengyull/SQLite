@@ -49,19 +49,8 @@ class MainActivity : AppCompatActivity(), SecondFragment.NotificationListener {
     private lateinit var binding: ActivityMainBinding
     private var mediaPlayer: MediaPlayer? = null
     private val runningQOrLater = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
-    private lateinit var activityRecognitionClient: ActivityRecognitionClient
-    private lateinit var activityTransitionList: ArrayList<ActivityTransition>
-    private lateinit var locationManager: LocationManager
-    private lateinit var locationListener: LocationListener
-    private lateinit var handler: Handler
-    private lateinit var runnable: Runnable
-    private lateinit var myActivity: MyActivity
     private lateinit var img:ImageView
     lateinit var dd: LocalDateTime
-    private lateinit var sensorManager: SensorManager
-
-    private lateinit var accelerometer: Sensor
-    private lateinit var gyroscope: Sensor
 
     private lateinit var us: Uri
     private var lest = 0;
@@ -72,7 +61,6 @@ class MainActivity : AppCompatActivity(), SecondFragment.NotificationListener {
         super.onCreate(savedInstanceState)
 
         dd = LocalDateTime.now()
-        myActivity = MyActivity.STILL
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         img = findViewById(R.id.imageView2)

@@ -94,37 +94,11 @@ class SecondFragment : Fragment(), AdapterView.OnItemClickListener {
 
         fileAdapter.notifyDataSetChanged()
     }
-
-    fun changev(str: String){
-        val tv = TextView(context)
-        tv.text = str;
-        //binding.scrollView2.removeAllViews()
-        val xx = binding.scrollView2.get(0) as LinearLayout
-        xx.removeAllViews()
-        xx.addView(tv)
-        //binding.scrollView2.addView(tv)
-        binding.scrollView2.post { binding.scrollView2.fullScroll(View.FOCUS_DOWN) }
-    }
-
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
     }
 
-
-    fun logActivity(now:String, activityDuration:Long,activity:String){
-        val databaseHelper = ActivityLogDatabaseHelper(this.requireContext())
-
-        // Log activity data to the database
-        val db = databaseHelper.writableDatabase
-        val values = ContentValues().apply {
-            put("start_time", now.toString())
-            put("duration", activityDuration)
-            put("activity", activity)
-        }
-        db.insert("activity_log", null, values)
-        db.close()
-    }
 
     fun qu(){
         val databaseHelper = ActivityLogDatabaseHelper(this.requireContext())
@@ -159,8 +133,6 @@ class SecondFragment : Fragment(), AdapterView.OnItemClickListener {
 
             }
         }
-        //changev(texts)
-
 
         binding.textviewSecond.text = texts
         latestActivityCursor.close()
