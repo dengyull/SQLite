@@ -68,6 +68,7 @@ class FirstFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+
         binding.buttonFirst.setOnClickListener {
             // Get current time and create activity data
             findNavController().navigate(R.id.action_FirstFragment_to_SecondFragment)
@@ -155,6 +156,9 @@ class FirstFragment : Fragment() {
         handlers = Handler(Looper.getMainLooper())
         runnables = object : Runnable {
             override fun run() {
+                if (!isAdded) {
+                    return
+                }
                 if (ActivityCompat.checkSelfPermission(
                         requireContext(),
                         Manifest.permission.ACCESS_FINE_LOCATION

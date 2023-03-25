@@ -210,21 +210,7 @@ class SecondFragment : Fragment(), AdapterView.OnItemClickListener {
     }
 
     override fun onItemClick(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-        if (ActivityCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.READ_EXTERNAL_STORAGE
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.READ_EXTERNAL_STORAGE
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            val permissionArray = arrayOf(
-                Manifest.permission.READ_EXTERNAL_STORAGE,
-            )
-            val requestCode = 123 // Replace with your desired request code
-            ActivityCompat.requestPermissions(requireActivity(), permissionArray, requestCode)
-            return
-        }
+
 
         val fileName = musiclists[position]
         Toast.makeText(context, "Selected file: $fileName", Toast.LENGTH_SHORT).show()

@@ -83,10 +83,7 @@ class MainActivity : AppCompatActivity(), SecondFragment.NotificationListener {
         appBarConfiguration = AppBarConfiguration(navController.graph)
         setupActionBarWithNavController(navController, appBarConfiguration)
 
-        binding.fab.setOnClickListener { view ->
-            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                .setAction("Action", null).show()
-        }
+
         var sharedPref : SharedPreferences = this.getPreferences(Context.MODE_PRIVATE);
         us = Uri.parse(sharedPref.getString("song",""))
         Log.d("music url", us.toString())
